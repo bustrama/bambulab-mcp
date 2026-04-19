@@ -122,14 +122,19 @@ function ClaudeMark() {
 function BambuMark() {
   return (
     <span style={styles.mark} aria-label="Bambu Lab" title="Bambu Lab">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="https://store.bblcdn.com/s2/default/febc4874843645f38149a05caa0f8a6d/logo.png"
-        alt="Bambu Lab"
-        width={24}
-        height={24}
-        style={{ objectFit: "contain" }}
-      />
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 135 176"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <g fill="#00ae42">
+          <polygon points="71.11,153.19 117.59,153.19 117.59,89.8 71.11,71.5" />
+          <polygon points="71.11,22.84 71.11,63.69 117.59,82 117.59,22.84" />
+          <polygon points="17.42,22.84 17.42,104.53 63.89,86.23 63.89,22.84" />
+          <polygon points="17.42,153.19 63.89,153.19 63.89,94.03 17.42,112.34" />
+        </g>
+      </svg>
     </span>
   );
 }
