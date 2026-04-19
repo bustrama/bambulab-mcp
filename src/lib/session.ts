@@ -12,6 +12,10 @@ function encryptionKey(): Buffer {
 
 export type Credential = { accessToken: string; region: BambuRegion };
 
+// Pin the algorithm on every verify call — jose with a raw HMAC secret already
+// refuses RS*/ES*/none, but explicit is safer and future-proof.
+const VERIFY_OPTIONS = { algorithms: ["HS256"] };
+
 // ── Access tokens (MCP bearer tokens) ────────────────────────────────────────
 
 /**
@@ -21,7 +25,7 @@ export type Credential = { accessToken: string; region: BambuRegion };
  */
 export async function createSession(cred: Credential): Promise<string> {
   const enc = encrypt(cred.accessToken);
-  return new SignJWT({ enc, r: cred.region })
+  return new SignJWT({ sub: "access", enc, r: cred.region })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("90d") // Bambu tokens last ~90 days
@@ -31,7 +35,11 @@ export async function createSession(cred: Credential): Promise<string> {
 /** Resolve a bearer token → plain-text Bambu credential, or null. */
 export async function resolveCredential(token: string): Promise<Credential | null> {
   try {
-    const { payload } = await jwtVerify(token, jwtSecret());
+    const { payload } = await jwtVerify(token, jwtSecret(), VERIFY_OPTIONS);
+    // Reject auth_code / tfa_ticket JWTs — they share the same HMAC key but
+    // are short-lived grants, never MCP bearer tokens. Accept missing `sub`
+    // for backwards compatibility with tokens issued before this check.
+    if (payload.sub && payload.sub !== "access") return null;
     if (typeof payload.enc !== "string") return null;
     const region = (payload.r === "china" ? "china" : "world") as BambuRegion;
     return { accessToken: decrypt(payload.enc), region };
@@ -80,7 +88,7 @@ export async function exchangeAuthCode(params: {
   clientId: string;
 }): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(params.code, jwtSecret());
+    const { payload } = await jwtVerify(params.code, jwtSecret(), VERIFY_OPTIONS);
 
     if (payload.sub !== "auth_code") return null;
     if (typeof payload.enc !== "string") return null;
@@ -134,7 +142,7 @@ export async function resolveTfaTicket(
   ticket: string
 ): Promise<{ tfaKey: string; account: string; region: BambuRegion } | null> {
   try {
-    const { payload } = await jwtVerify(ticket, jwtSecret());
+    const { payload } = await jwtVerify(ticket, jwtSecret(), VERIFY_OPTIONS);
     if (payload.sub !== "tfa_ticket") return null;
     if (typeof payload.tk !== "string" || typeof payload.a !== "string") return null;
     const region = (payload.r === "china" ? "china" : "world") as BambuRegion;

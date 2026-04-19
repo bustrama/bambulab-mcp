@@ -12,6 +12,7 @@ import {
   createTfaTicket,
   resolveTfaTicket,
 } from "@/lib/session";
+import { isAllowedRedirectUri } from "@/lib/redirect";
 
 export const runtime = "nodejs";
 
@@ -23,11 +24,11 @@ export const runtime = "nodejs";
 // to Claude. "need_verifyCode" and "need_tfa" ask the UI to render the next
 // step with additional data (tfaTicket).
 const OAuthParams = z.object({
-  clientId: z.string(),
-  redirectUri: z.string().url(),
-  state: z.string(),
-  codeChallenge: z.string().min(1),
-  codeChallengeMethod: z.string().default("S256"),
+  clientId: z.string().max(256),
+  redirectUri: z.string().url().max(1024),
+  state: z.string().max(1024),
+  codeChallenge: z.string().min(1).max(512),
+  codeChallengeMethod: z.string().max(16).default("S256"),
 });
 
 const Body = z.discriminatedUnion("step", [
@@ -67,6 +68,21 @@ export async function POST(req: NextRequest) {
   if (parsed.codeChallengeMethod !== "S256") {
     return NextResponse.json(
       { error: "Only S256 code_challenge_method is supported" },
+      { status: 400 }
+    );
+  }
+
+  // Reject any redirect_uri that isn't pointing at a known MCP client. This is
+  // what stops the authorize page from being used as a generic Bambu-password
+  // phisher — without it, an attacker could craft a /oauth/authorize URL with
+  // redirect_uri=https://evil.com, phish a user on our real domain, and walk
+  // away with an auth code they exchange for the victim's Bambu token.
+  if (!isAllowedRedirectUri(parsed.redirectUri)) {
+    return NextResponse.json(
+      {
+        error:
+          "This redirect_uri is not allow-listed. Only Claude.ai / Claude.com callbacks are accepted.",
+      },
       { status: 400 }
     );
   }
@@ -128,17 +144,27 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     if (e instanceof BambuApiError) {
+      // Log upstream detail server-side only. NEVER echo Bambu's raw body to
+      // the client — it can contain reconnaissance-useful internals (CF ray
+      // IDs, account field echoes, etc.). Map to a small set of generic msgs.
+      console.error("[authorize] bambu error:", {
+        status: e.status,
+        cloudflare: e.cloudflare,
+        bodySnippet: e.body.slice(0, 200),
+      });
       const msg = e.cloudflare
-        ? "Cloudflare blocked this request. Try again in a few minutes from a different network."
+        ? "Our server is temporarily being blocked by Bambu's Cloudflare. Please try again in a few minutes."
         : e.status === 401
           ? "Wrong credentials — check email, password, or code."
-          : `Bambu Lab returned ${e.status}. ${e.body.slice(0, 200)}`;
+          : e.status === 429
+            ? "Too many attempts. Please wait a few minutes and try again."
+            : e.status >= 500
+              ? "Bambu Lab is temporarily unavailable. Please try again shortly."
+              : "Bambu Lab rejected the request.";
       return NextResponse.json({ error: msg }, { status: e.status === 401 ? 401 : 502 });
     }
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Unknown error" },
-      { status: 500 }
-    );
+    console.error("[authorize] unexpected error:", e);
+    return NextResponse.json({ error: "Unexpected server error" }, { status: 500 });
   }
 
   if (!bambuAccessToken) {

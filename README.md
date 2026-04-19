@@ -28,3 +28,7 @@ Bambu Lab has no official API, but the community has reverse-engineered the clou
 - "Show me all projects from last week."
 
 The implementation is intentionally thin: one `BambuClient` per request, stateless JWT auth, no database.
+
+## Security
+
+See [SECURITY.md](./SECURITY.md) for the threat model, applied hardening, known gaps (notably: no rate limiting — add Vercel firewall before exposing publicly), and how to report a vulnerability.

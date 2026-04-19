@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exchangeAuthCode } from "@/lib/session";
+import { isAllowedRedirectUri } from "@/lib/redirect";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
   if (!code) return errorResponse("invalid_request", "Missing code");
   if (!redirect_uri) return errorResponse("invalid_request", "Missing redirect_uri");
   if (!code_verifier) return errorResponse("invalid_request", "Missing code_verifier");
+  if (!isAllowedRedirectUri(redirect_uri)) {
+    return errorResponse("invalid_request", "redirect_uri is not allow-listed");
+  }
 
   const accessToken = await exchangeAuthCode({
     code,
