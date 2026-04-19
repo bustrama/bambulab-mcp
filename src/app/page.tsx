@@ -72,6 +72,15 @@ export default function Home() {
           Your Bambu password is sent only to Bambu Lab. Only the resulting access token is
           stored — encrypted with AES-256-GCM inside the bearer token Claude holds.
         </p>
+
+        <a
+          href="https://linktr.ee/bustrama"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={styles.credits}
+        >
+          Built by bustrama ↗
+        </a>
       </div>
     </main>
   );
@@ -187,4 +196,16 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "left",
   },
   footer: { fontSize: "11px", color: "#555", lineHeight: 1.5, marginTop: "8px" },
+  credits: {
+    display: "inline-block",
+    marginTop: "20px",
+    paddingTop: "16px",
+    borderTop: "1px solid #222",
+    width: "100%",
+    boxSizing: "border-box",
+    fontSize: "12px",
+    color: "#888",
+    textDecoration: "none",
+    fontWeight: 500,
+  },
 };
