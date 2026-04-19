@@ -144,13 +144,12 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     if (e instanceof BambuApiError) {
-      // Log upstream detail server-side only. NEVER echo Bambu's raw body to
-      // the client — it can contain reconnaissance-useful internals (CF ray
-      // IDs, account field echoes, etc.). Map to a small set of generic msgs.
+      // Log upstream status only. Never log the raw body — Bambu sometimes
+      // echoes the account email, and Vercel log retention would turn it
+      // into persisted PII. Reproduce locally if deeper detail is needed.
       console.error("[authorize] bambu error:", {
         status: e.status,
         cloudflare: e.cloudflare,
-        bodySnippet: e.body.slice(0, 200),
       });
       const msg = e.cloudflare
         ? "Our server is temporarily being blocked by Bambu's Cloudflare. Please try again in a few minutes."

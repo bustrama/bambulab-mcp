@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import { isAllowedRedirectUri } from "@/lib/redirect";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,9 @@ const CORS = {
 };
 
 // Dynamic Client Registration — RFC 7591. No persistence needed because our
-// auth codes are self-contained JWTs.
+// auth codes are self-contained JWTs. We do still validate the supplied
+// redirect_uris against the same allow-list as /oauth/authorize — echoing
+// back an uncontrolled list would imply we'd honour it later (we don't).
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown> = {};
   try {
@@ -20,8 +23,21 @@ export async function POST(req: NextRequest) {
   }
 
   const redirectUris: string[] = Array.isArray(body.redirect_uris)
-    ? (body.redirect_uris as string[])
+    ? (body.redirect_uris as string[]).filter(
+        (u): u is string => typeof u === "string"
+      )
     : [];
+
+  const invalid = redirectUris.find((u) => !isAllowedRedirectUri(u));
+  if (invalid) {
+    return NextResponse.json(
+      {
+        error: "invalid_redirect_uri",
+        error_description: `redirect_uri not allow-listed: ${invalid}`,
+      },
+      { status: 400, headers: CORS }
+    );
+  }
 
   const clientId = randomBytes(16).toString("hex");
 

@@ -20,8 +20,10 @@ export function isAllowedRedirectUri(raw: string): boolean {
     return false;
   }
 
-  // localhost (any scheme/port) for local MCP client testing
-  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true;
+  // localhost (any scheme/port) for local MCP client testing — dev only
+  if (process.env.NODE_ENV !== "production") {
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return true;
+  }
 
   // Everything else must be HTTPS
   if (url.protocol !== "https:") return false;
@@ -31,4 +33,15 @@ export function isAllowedRedirectUri(raw: string): boolean {
   return ALLOWED_HOST_SUFFIXES.some(
     (suffix) => host === suffix || host.endsWith(`.${suffix}`)
   );
+}
+
+/**
+ * True if `origin` (as sent in the CORS `Origin` header) is one of the MCP
+ * clients we trust to call /api/mcp from a browser. Reuses the same allow-list
+ * as redirect URIs — every legitimate MCP origin is also a legitimate redirect
+ * target. Returns false for missing / malformed origins.
+ */
+export function isAllowedClientOrigin(origin: string): boolean {
+  if (!origin) return false;
+  return isAllowedRedirectUri(origin);
 }

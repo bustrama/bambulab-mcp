@@ -10,7 +10,8 @@ export async function GET() {
     {
       resource: base,
       authorization_servers: [base],
-      bearer_methods_supported: ["header", "query"],
+      // Header only — query-string bearers leak into access logs (RFC 6750 §2.3).
+      bearer_methods_supported: ["header"],
       resource_documentation: `${base}/api/mcp`,
     },
     {

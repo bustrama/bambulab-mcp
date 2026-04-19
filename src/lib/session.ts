@@ -94,7 +94,11 @@ export async function exchangeAuthCode(params: {
     if (typeof payload.enc !== "string") return null;
     if (typeof payload.cc !== "string") return null;
     if (typeof payload.ru !== "string") return null;
+    if (typeof payload.ci !== "string") return null;
     if (payload.ru !== params.redirectUri) return null;
+    // Enforce client_id binding — RFC 6749 §4.1.3. Prevents an attacker who
+    // steals an auth code from redeeming it under a different client_id.
+    if (!params.clientId || payload.ci !== params.clientId) return null;
 
     const computed = createHash("sha256")
       .update(params.codeVerifier)
@@ -116,7 +120,7 @@ export async function exchangeAuthCode(params: {
 
 type TfaTicketPayload = {
   sub: "tfa_ticket";
-  tk: string; // tfaKey
+  tk: string; // AES-256-GCM ciphertext of tfaKey
   a: string;  // account (for display only)
   r: BambuRegion;
 };
@@ -126,9 +130,12 @@ export async function createTfaTicket(params: {
   account: string;
   region: BambuRegion;
 }): Promise<string> {
+  // Encrypt tfaKey so a leaked ticket alone (e.g. via a log line) does not
+  // expose the upstream Bambu TFA continuation secret in plaintext.
+  const tkEnc = encrypt(params.tfaKey);
   return new SignJWT({
     sub: "tfa_ticket",
-    tk: params.tfaKey,
+    tk: tkEnc,
     a: params.account,
     r: params.region,
   } satisfies TfaTicketPayload)
@@ -146,7 +153,7 @@ export async function resolveTfaTicket(
     if (payload.sub !== "tfa_ticket") return null;
     if (typeof payload.tk !== "string" || typeof payload.a !== "string") return null;
     const region = (payload.r === "china" ? "china" : "world") as BambuRegion;
-    return { tfaKey: payload.tk, account: payload.a, region };
+    return { tfaKey: decrypt(payload.tk), account: payload.a, region };
   } catch {
     return null;
   }

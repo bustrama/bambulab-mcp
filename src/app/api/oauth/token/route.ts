@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
   if (!code) return errorResponse("invalid_request", "Missing code");
   if (!redirect_uri) return errorResponse("invalid_request", "Missing redirect_uri");
   if (!code_verifier) return errorResponse("invalid_request", "Missing code_verifier");
+  if (!client_id) return errorResponse("invalid_request", "Missing client_id");
   if (!isAllowedRedirectUri(redirect_uri)) {
     return errorResponse("invalid_request", "redirect_uri is not allow-listed");
   }
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     code,
     codeVerifier: code_verifier,
     redirectUri: redirect_uri,
-    clientId: client_id ?? "",
+    clientId: client_id,
   });
 
   if (!accessToken) {

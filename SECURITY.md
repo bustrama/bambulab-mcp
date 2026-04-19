@@ -14,22 +14,25 @@ This server acts as an OAuth-wrapped proxy to the Bambu Lab cloud. Each connecte
 
 | Mitigation | Where |
 |---|---|
-| `redirect_uri` allow-list (claude.ai, claude.com, anthropic.com, localhost) | [src/lib/redirect.ts](src/lib/redirect.ts), enforced in both `/api/oauth/authorize` and `/api/oauth/token` |
+| `redirect_uri` allow-list (claude.ai, claude.com, anthropic.com; localhost dev-only) | [src/lib/redirect.ts](src/lib/redirect.ts), enforced in `/api/oauth/authorize`, `/api/oauth/token`, and `/api/oauth/register` |
 | HS256 pinned on every `jwtVerify` | [src/lib/session.ts](src/lib/session.ts) |
 | `sub` claim separation (access / auth_code / tfa_ticket) | [src/lib/session.ts](src/lib/session.ts) |
-| PKCE S256 required; code–redirect-uri binding enforced at exchange | [src/lib/session.ts](src/lib/session.ts) |
+| PKCE S256 required; code–redirect-uri AND code–client-id binding enforced at exchange | [src/lib/session.ts](src/lib/session.ts) |
+| TFA continuation key encrypted (AES-256-GCM) inside the ticket JWT | [src/lib/session.ts](src/lib/session.ts) |
+| Bearer token accepted only via `Authorization` header — no query-string fallback | [src/app/api/mcp/route.ts](src/app/api/mcp/route.ts), [src/app/api/oauth/protected-resource/route.ts](src/app/api/oauth/protected-resource/route.ts) |
+| CORS narrowed to claude.ai / claude.com / anthropic.com on `/api/mcp` | [src/app/api/mcp/route.ts](src/app/api/mcp/route.ts) |
+| Security headers: HSTS, X-Frame-Options: DENY, nosniff, Referrer-Policy: no-referrer | [next.config.ts](next.config.ts) |
 | Input length bounds on all OAuth params | [src/app/api/oauth/authorize/route.ts](src/app/api/oauth/authorize/route.ts) |
-| Sanitized upstream errors — raw Bambu bodies never flow to the client | [src/app/api/oauth/authorize/route.ts](src/app/api/oauth/authorize/route.ts) |
+| Sanitized upstream errors — raw Bambu bodies never flow to the client or server logs | [src/app/api/oauth/authorize/route.ts](src/app/api/oauth/authorize/route.ts) |
 | React auto-escaping for all browser-rendered params; no `dangerouslySetInnerHTML` anywhere | [src/app/oauth/authorize/page.tsx](src/app/oauth/authorize/page.tsx) |
 | `.gitignore` blocks `.env*` and `.vercel/` | [.gitignore](.gitignore) |
 
 ## Known gaps (do not use if these matter to you)
 
 1. **No rate limiting.** The `/api/oauth/authorize` endpoint will forward any email/password combination to Bambu. A determined attacker could use this deployment as a password-spray proxy. Deployers should add Vercel's native firewall / Upstash rate limit before opening the URL to the public. Secondary risk: repeated abusive requests from our Vercel egress IP could get our server itself blocked by Bambu's Cloudflare and cause an outage for legitimate users.
-2. **Bearer token via query string is advertised in OAuth metadata.** `/api/oauth/protected-resource` lists both `header` and `query`. When Claude.ai falls back to SSE, the JWT is embedded in the URL and Vercel's access logs will capture it. Anyone with read access to this Vercel project can see those JWTs and decrypt them via `ENCRYPTION_KEY`. If you self-host, either limit who has Vercel project access or patch the server to reject query-string auth and only accept the `Authorization` header.
-3. **CORS is wide-open (`*`) on `/api/mcp`.** The MCP endpoint is hardened by bearer-token auth; credentials aren't allowed over CORS, so there's no CSRF path. But a malicious site can make cross-origin calls that count against a victim's quota if the victim shares their JWT. Self-hosters may want to narrow this to `https://claude.ai` and `https://claude.com`.
-4. **No token revocation.** Rotating `JWT_SECRET` invalidates every issued MCP token in one go (nuclear option). There is no per-user revoke endpoint. To drop a specific user's access today: have them rotate their Bambu Lab password, which expires the underlying Bambu access token.
-5. **Unofficial Bambu API.** The upstream endpoints we call are community-reverse-engineered. Bambu can change them at any time, and depending on Bambu's ToS interpretation, this may not be officially sanctioned.
+2. **Auth codes are not single-use.** The 5-minute PKCE code is a self-contained JWT and can be replayed within its lifetime if captured together with the `code_verifier`. A stateless design can't enforce one-time use without external storage — plug in Vercel KV / Upstash Redis and SETNX on the code's `jti` if this matters to you.
+3. **No token revocation.** Rotating `JWT_SECRET` invalidates every issued MCP token in one go (nuclear option). There is no per-user revoke endpoint. To drop a specific user's access today: have them rotate their Bambu Lab password, which expires the underlying Bambu access token.
+4. **Unofficial Bambu API.** The upstream endpoints we call are community-reverse-engineered. Bambu can change them at any time, and depending on Bambu's ToS interpretation, this may not be officially sanctioned.
 
 ## Reporting a vulnerability
 
