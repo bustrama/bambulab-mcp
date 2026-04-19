@@ -24,11 +24,13 @@ export default function Home() {
     <main style={styles.main}>
       <div style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.logo}>🎋</div>
+          <div style={styles.logoRow}>
+            <ClaudeMark />
+            <span style={styles.logoPlus}>+</span>
+            <BambuMark />
+          </div>
           <h1 style={styles.title}>Bambu Lab MCP</h1>
-          <p style={styles.subtitle}>
-            Connect Claude to your Bambu Lab account. Three quick steps.
-          </p>
+          <p style={styles.subtitle}>Connect Claude to your Bambu Lab account.</p>
         </div>
 
         <ol style={styles.stepList}>
@@ -36,9 +38,6 @@ export default function Home() {
             <div style={styles.stepNum}>1</div>
             <div style={styles.stepBody}>
               <div style={styles.stepTitle}>Copy the server URL</div>
-              <div style={styles.stepHint}>
-                You&apos;ll paste this into Claude in the next step.
-              </div>
               <div style={styles.urlRow}>
                 <code style={styles.urlCode}>{appUrl}</code>
                 <button type="button" onClick={copyUrl} style={styles.copyButton}>
@@ -51,10 +50,9 @@ export default function Home() {
           <li style={styles.step}>
             <div style={styles.stepNum}>2</div>
             <div style={styles.stepBody}>
-              <div style={styles.stepTitle}>Open Claude&apos;s Integrations page</div>
+              <div style={styles.stepTitle}>Add it in Claude</div>
               <div style={styles.stepHint}>
-                Click <strong>Add custom connector</strong>, then paste the URL you just
-                copied.
+                Open Claude&apos;s Integrations → <strong>Add custom connector</strong> → paste the URL.
               </div>
               <a
                 href="https://claude.ai/settings/integrations"
@@ -70,25 +68,23 @@ export default function Home() {
           <li style={styles.step}>
             <div style={styles.stepNum}>3</div>
             <div style={styles.stepBody}>
-              <div style={styles.stepTitle}>Sign in with your Bambu Lab account</div>
+              <div style={styles.stepTitle}>Sign in with Bambu Lab</div>
               <div style={styles.stepHint}>
-                Claude opens a pop-up to this site. Enter your Bambu email + password (+
-                email code or 2FA if prompted). Claude is now connected.
+                Claude opens a pop-up. Enter your Bambu email + password (+ code / 2FA if prompted).
               </div>
             </div>
           </li>
         </ol>
 
         <div style={styles.features}>
-          <div style={styles.feature}>📜 Print history & stats</div>
-          <div style={styles.feature}>🖨️ Printer list & status</div>
-          <div style={styles.feature}>🧵 Filament usage</div>
-          <div style={styles.feature}>📡 Live job status</div>
+          <span style={styles.feature}>📜 History</span>
+          <span style={styles.feature}>🖨️ Printers</span>
+          <span style={styles.feature}>🧵 Filament</span>
+          <span style={styles.feature}>📡 Live status</span>
         </div>
 
         <p style={styles.footer}>
-          Your Bambu password is sent only to Bambu Lab. Only the resulting access token is
-          stored — encrypted with AES-256-GCM inside the bearer token Claude holds.
+          Password goes straight to Bambu Lab. Only the access token is kept — AES-256-GCM encrypted inside Claude&apos;s bearer token.
         </p>
 
         <a
@@ -104,71 +100,126 @@ export default function Home() {
   );
 }
 
+function ClaudeMark() {
+  return (
+    <span style={styles.mark} aria-label="Claude" title="Claude">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M12 2 L13.6 9.2 C13.85 10.3 14.7 11.15 15.8 11.4 L23 13 L15.8 14.6 C14.7 14.85 13.85 15.7 13.6 16.8 L12 24 L10.4 16.8 C10.15 15.7 9.3 14.85 8.2 14.6 L1 13 L8.2 11.4 C9.3 11.15 10.15 10.3 10.4 9.2 Z"
+          fill="#D97757"
+        />
+      </svg>
+    </span>
+  );
+}
+
+function BambuMark() {
+  return (
+    <span style={{ ...styles.mark, background: "#00ae42" }} aria-label="Bambu Lab" title="Bambu Lab">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M20 3 C12 4 6 9 4 17 C3.5 19 3.5 20.5 4 21 C4.5 21.5 6 21.5 8 21 C16 19 20.5 13.5 21 5 C21 4 20.8 3.3 20.5 3.1 C20.3 3 20.1 3 20 3 Z"
+          fill="#ffffff"
+        />
+        <path
+          d="M5 20 C9 14 14 10 20 7"
+          stroke="#00ae42"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </svg>
+    </span>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   main: {
     minHeight: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "24px",
+    padding: "16px",
   },
   card: {
     background: "#1a1a1a",
     border: "1px solid #2a2a2a",
-    borderRadius: "16px",
-    padding: "40px",
-    maxWidth: "560px",
+    borderRadius: "14px",
+    padding: "24px",
+    maxWidth: "480px",
     width: "100%",
   },
-  header: { textAlign: "center", marginBottom: "32px" },
-  logo: { fontSize: "44px", marginBottom: "12px" },
-  title: { fontSize: "26px", fontWeight: 700, margin: "0 0 10px" },
-  subtitle: { color: "#888", fontSize: "14px", lineHeight: 1.5, margin: 0 },
+  header: { textAlign: "center", marginBottom: "20px" },
+  logoRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    marginBottom: "12px",
+  },
+  mark: {
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    background: "#0f0f0f",
+    border: "1px solid #2a2a2a",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoPlus: {
+    color: "#555",
+    fontSize: "16px",
+    fontWeight: 400,
+  },
+  title: { fontSize: "20px", fontWeight: 700, margin: "0 0 4px" },
+  subtitle: { color: "#888", fontSize: "13px", lineHeight: 1.4, margin: 0 },
   stepList: {
     listStyle: "none",
     padding: 0,
-    margin: "0 0 32px",
+    margin: "0 0 16px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "8px",
   },
   step: {
     display: "flex",
-    gap: "16px",
-    padding: "18px",
+    gap: "12px",
+    padding: "12px 14px",
     background: "#0f0f0f",
     border: "1px solid #222",
-    borderRadius: "12px",
+    borderRadius: "10px",
   },
   stepNum: {
     flexShrink: 0,
-    width: "28px",
-    height: "28px",
+    width: "22px",
+    height: "22px",
     borderRadius: "50%",
     background: "#00ae42",
     color: "#fff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: 700,
+    marginTop: "1px",
   },
   stepBody: { flex: 1, minWidth: 0 },
   stepTitle: {
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: 600,
     color: "#f0f0f0",
-    marginBottom: "4px",
+    marginBottom: "6px",
   },
   stepHint: {
     fontSize: "12px",
     color: "#888",
-    lineHeight: 1.5,
-    marginBottom: "12px",
+    lineHeight: 1.45,
+    marginBottom: "8px",
   },
   urlRow: {
     display: "flex",
-    gap: "8px",
+    gap: "6px",
     alignItems: "stretch",
   },
   urlCode: {
@@ -177,62 +228,63 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#050505",
     border: "1px solid #2a2a2a",
     borderRadius: "6px",
-    padding: "8px 10px",
-    fontSize: "12px",
+    padding: "6px 9px",
+    fontSize: "11px",
     color: "#00ae42",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
   copyButton: {
-    padding: "0 14px",
+    padding: "0 12px",
     background: "#2a2a2a",
     color: "#f0f0f0",
     border: "1px solid #333",
     borderRadius: "6px",
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: 600,
     cursor: "pointer",
     whiteSpace: "nowrap",
   },
   primaryButton: {
     display: "inline-block",
-    padding: "10px 18px",
+    padding: "7px 14px",
     background: "#00ae42",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
-    fontSize: "13px",
+    borderRadius: "7px",
+    fontSize: "12px",
     fontWeight: 600,
     textDecoration: "none",
   },
   features: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "8px",
-    marginBottom: "20px",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px",
+    marginBottom: "14px",
+    justifyContent: "center",
   },
   feature: {
     background: "#0f0f0f",
     border: "1px solid #222",
-    borderRadius: "8px",
-    padding: "10px 12px",
-    fontSize: "12px",
+    borderRadius: "999px",
+    padding: "4px 10px",
+    fontSize: "11px",
     color: "#888",
   },
   footer: {
-    fontSize: "11px",
+    fontSize: "10.5px",
     color: "#555",
     lineHeight: 1.5,
     textAlign: "center",
-    margin: "8px 0 0",
+    margin: 0,
   },
   credits: {
     display: "block",
-    marginTop: "20px",
-    paddingTop: "16px",
+    marginTop: "14px",
+    paddingTop: "12px",
     borderTop: "1px solid #222",
-    fontSize: "12px",
+    fontSize: "11px",
     color: "#888",
     textDecoration: "none",
     fontWeight: 500,
