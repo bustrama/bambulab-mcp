@@ -54,6 +54,9 @@ POST https://bambulab.com/api/sign-in/tfa     step 2b (TFA)
   {tfaKey, tfaCode} → token (in Set-Cookie)
 ```
 
+Accounts created with Google/Apple sign-in have no Bambu password. For those, the
+"Email me a code instead" button (`step: "sendCode"`) skips step 1 and goes straight to step 2a.
+
 The user's password is never stored. Only the resulting Bambu access token (90-day lifetime) lives encrypted inside the MCP bearer JWT.
 
 ## Cloudflare Resistance

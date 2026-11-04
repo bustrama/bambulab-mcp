@@ -39,6 +39,13 @@ const Body = z.discriminatedUnion("step", [
     region: z.enum(["world", "china"]).default("world"),
     ...OAuthParams.shape,
   }),
+  // Passwordless start — for accounts created via Google/Apple sign-in.
+  z.object({
+    step: z.literal("sendCode"),
+    account: z.string().email(),
+    region: z.enum(["world", "china"]).default("world"),
+    ...OAuthParams.shape,
+  }),
   z.object({
     step: z.literal("code"),
     account: z.string().min(3),
@@ -91,7 +98,14 @@ export async function POST(req: NextRequest) {
   let region: BambuRegion = "world";
 
   try {
-    if (parsed.step === "password") {
+    if (parsed.step === "sendCode") {
+      await sendEmailCode(parsed.account, parsed.region);
+      return NextResponse.json({
+        status: "need_verifyCode",
+        account: parsed.account,
+        region: parsed.region,
+      });
+    } else if (parsed.step === "password") {
       region = parsed.region;
       const result = await login({
         account: parsed.account,

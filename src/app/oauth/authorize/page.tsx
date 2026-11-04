@@ -150,6 +150,15 @@ function AuthorizeContent() {
               {loading ? "Signing in…" : "Continue"}
             </button>
 
+            <button
+              type="button"
+              disabled={loading || !account}
+              onClick={() => submit({ step: "sendCode", account, region, ...oauthBase })}
+              style={styles.linkButton}
+            >
+              Signed up with Google or Apple? Email me a code instead
+            </button>
+
             <p style={styles.footer}>
               Your password is sent only to Bambu Lab to obtain an access token. It is never
               stored on this server.
